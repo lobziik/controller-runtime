@@ -100,6 +100,8 @@ type Environment struct {
 	// loading.
 	Config *rest.Config
 
+	SecureConfig *rest.Config
+
 	// CRDInstallOptions are the options for installing CRDs.
 	CRDInstallOptions CRDInstallOptions
 
@@ -257,6 +259,14 @@ func (te *Environment) Start() (*rest.Config, error) {
 		// Create the *rest.Config for creating new clients
 		te.Config = &rest.Config{
 			Host: te.ControlPlane.APIURL().Host,
+			// gotta go fast during tests -- we don't really care about overwhelming our test API server
+			QPS:   1000.0,
+			Burst: 2000.0,
+		}
+
+		te.SecureConfig = &rest.Config{
+			Host:            fmt.Sprintf("%s:%d", te.ControlPlane.APIURL().Hostname(), te.ControlPlane.APIServer.SecurePort),
+			TLSClientConfig: te.ControlPlane.APIServer.TLSClientConfig,
 			// gotta go fast during tests -- we don't really care about overwhelming our test API server
 			QPS:   1000.0,
 			Burst: 2000.0,
